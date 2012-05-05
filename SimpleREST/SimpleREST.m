@@ -84,7 +84,6 @@
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:nsurl];
     [request setHTTPMethod:@"POST"];
     NSString *post = @"";
-    NSString *paramStr = @"";
     bool first = true;
     for (NSString* key in params) {
         if( first ){
@@ -92,7 +91,7 @@
             first = false;
         }
         else {
-            post = [NSString stringWithFormat:@"%@&%@=%@", post, paramStr, (NSString*)key, (NSString*)[params objectForKey:key]];
+            post = [NSString stringWithFormat:@"%@&%@=%@", post, (NSString*)key, (NSString*)[params objectForKey:key]];
         }
     }
     NSData *postData = [post dataUsingEncoding:NSASCIIStringEncoding allowLossyConversion:YES];
