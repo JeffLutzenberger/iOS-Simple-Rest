@@ -26,17 +26,13 @@
     return self;
 }
 
-- (NSDictionary*) Request:(NSString*) httpMethod resource:(NSString*)resource params:(NSDictionary*)params
+- (NSDictionary*) SendRequest:(NSMutableURLRequest*) request
 {
-    NSURL *nsurl = [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@", url, resource]];
-    
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:nsurl];
-    //check method type can be: GET, POST, PUT or DELETE
-    [request setHTTPMethod:httpMethod];
     NSHTTPURLResponse* urlResponse = nil;  
     NSError *error = [[NSError alloc] init];  
     NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&urlResponse error:&error];  
     NSString *result = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
+    
     if ([urlResponse statusCode] >= 200 && [urlResponse statusCode] < 300) {
         if( logSuccess )
         {
@@ -62,22 +58,61 @@
 
 - (NSDictionary*) Get:(NSString*) resource params:(NSDictionary*)params
 {
-    return [self Request:@"GET" resource:resource params:params];
+    NSString *paramStr = @"";
+    bool first = true;
+    for (NSString* key in params) {
+        if( first ){
+            paramStr = [NSString stringWithFormat:@"%@?%@=%@", paramStr, (NSString*)key, (NSString*)[params objectForKey:key]];
+            first = false;
+        }else {
+            paramStr = [NSString stringWithFormat:@"%@&%@=%@", paramStr, (NSString*)key, (NSString*)[params objectForKey:key]];
+        }
+    }
+    
+    NSURL *nsurl = [NSURL URLWithString:[[NSString stringWithFormat:@"%@/%@%@", url, resource, paramStr] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+    
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:nsurl];
+    [request setHTTPMethod:@"GET"];
+
+    return [self SendRequest:request];
 }
 
 - (NSDictionary*) Post:(NSString*) resource params:(NSDictionary*)params
 {
-    return [self Request:@"POST" resource:resource params:params];
+    NSURL *nsurl = [NSURL URLWithString:[[NSString stringWithFormat:@"%@/%@", url, resource] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+    
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:nsurl];
+    [request setHTTPMethod:@"POST"];
+    NSString *post = @"";
+    NSString *paramStr = @"";
+    bool first = true;
+    for (NSString* key in params) {
+        if( first ){
+            post = [NSString stringWithFormat:@"%@=%@", (NSString*)key, (NSString*)[params objectForKey:key]];
+            first = false;
+        }
+        else {
+            post = [NSString stringWithFormat:@"%@&%@=%@", post, paramStr, (NSString*)key, (NSString*)[params objectForKey:key]];
+        }
+    }
+    NSData *postData = [post dataUsingEncoding:NSASCIIStringEncoding allowLossyConversion:YES];
+    NSString *postLength = [NSString stringWithFormat:@"%d", [postData length]];
+    
+    [request setValue:postLength forHTTPHeaderField:@"Content-Length"];
+    [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+    [request setHTTPBody:postData];
+
+    return [self SendRequest:request];
 }
 
 - (NSDictionary*) Put:(NSString*) resource params:(NSDictionary*)params
 {
-    return [self Request:@"PUT" resource:resource params:params];
+    return Nil;
 }
 
 - (NSDictionary*) Delete:(NSString*) resource params:(NSDictionary*)params
 {
-    return [self Request:@"DELETE" resource:resource params:params];
+    return Nil;
 }
 
 @end
